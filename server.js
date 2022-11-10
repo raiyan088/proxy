@@ -88,9 +88,10 @@ client.on('connect', function(connection) {
 
     connection.on('message', function(message) {
         if(message.type === 'utf8') {
-            mJob = message.utf8Data
-            let data = JSON.parse(mJob)
+            let job = message.utf8Data
+            let data = JSON.parse(job)
             if(data['identifier'] == 'job') {
+                mJob = job
                 for(let value of Object.values(connections)) {
                     try {
                         value.send(message.utf8Data)
