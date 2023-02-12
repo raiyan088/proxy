@@ -571,8 +571,8 @@ function checkProxyLoop(loop, list) {
                 let proxy = {
                     host: '',
                     port: 0,
-                    ms: 0,
                     name: '',
+                    type: 0,
                     auth: ''
                 }
     
@@ -586,9 +586,13 @@ function checkProxyLoop(loop, list) {
                 if(split.length > 3 && split[3].length > 0) {
                     proxy.name = split[3]
                 }
+
+                if(split.length > 4 && split[4].type > 0) {
+                    proxy.type = split[4]
+                }
             
                 proxyCheck(proxy).then(res => {
-                    mTempProxy.push(res.host+':'+res.port+'@'+res.auth+'@'+res.name+'@'+res.ms)
+                    mTempProxy.push(res.host+':'+res.port+'@'+res.auth+'@'+res.name+'@'+res.type)
                     size++
                     if(size == length) {
                         checkProxyLoop(loop+300, list)
@@ -655,12 +659,10 @@ function proxyCheck(proxy) {
         }
 
         const req = http.request(proxy_options)
-        let start = new Date().getTime()
-
+        
         req.on('connect', res => {
             req.destroy()
             if (res.statusCode === 200) {
-                proxy.ms = new Date().getTime()-start
                 return resolve(proxy)
             } else {
                 return reject('Proxy offline')
