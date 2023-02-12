@@ -508,7 +508,6 @@ function collectServer2(page) {
                     } catch (e) {}
                 }
 
-                console.log(Object.keys(mTempAllProxy).length)
                 
                 collectServer2(page+1)
                 
@@ -566,7 +565,6 @@ function checkProxy(loop) {
 function checkProxyLoop(loop, list) {
     if(loop < list.length) {
         let length = list.length-loop>300 ? 300:list.length-loop
-        console.log(list.length, length)
         let size = 0
         for(let i=loop; i<loop+length; i++) {
             try {
@@ -638,7 +636,7 @@ function proxyCheck(proxy) {
         const proxy_options = {
             method: 'CONNECT',
             path: 'www.google.com:443',
-            timeout: 3000,
+            timeout: 1000,
             agent: false
         }
 
