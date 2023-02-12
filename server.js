@@ -19,6 +19,7 @@ let mTempAllProxy = {}
 let mAllProxy = {}
 let mTempProxy = []
 let mProxy = []
+let mTime = 0;
 
 const URL = 'https://server-9099-default-rtdb.firebaseio.com/public/proxy'
 
@@ -324,6 +325,8 @@ function collectProxy() {
 function updateProxy(time) {
     mTempAllProxy = {}
 
+    mTime = time
+
     if(time < new Date().getTime()) {
         request({
             url: 'https://free-proxy-list.net/',
@@ -528,6 +531,18 @@ app.post('/proxy', async function (req, res) {
     } else {
         res.end('error')
     }
+})
+
+app.get('/status', async function (req, res) {
+    let status = {
+        tempSize: mTempAllProxy.length,
+        allSize: mAllProxy.length,
+        tempProxy: mTempProxy.length,
+        proxy: mProxy.length,
+        time: mTime,
+        have: mTime - new Date().getTime()
+    }
+    res.end(JSON.stringify(status))
 })
 
 function checkProxy(loop) {
