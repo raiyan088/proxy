@@ -19,7 +19,8 @@ let mTempAllProxy = {}
 let mAllProxy = {}
 let mTempProxy = []
 let mProxy = []
-let mTime = 0;
+let mTime = 0
+let mCompleted = 0
 
 const URL = 'https://server-9099-default-rtdb.firebaseio.com/public/proxy'
 
@@ -540,7 +541,8 @@ app.get('/status', async function (req, res) {
         tempProxy: mTempProxy.length,
         proxy: mProxy.length,
         time: mTime,
-        have: mTime - new Date().getTime()
+        have: mTime - new Date().getTime(),
+        success: mCompleted
     }
     res.end(JSON.stringify(status))
 })
@@ -602,6 +604,7 @@ function checkProxyLoop(loop, list) {
             } catch (error) {} 
         }
     } else {
+        mCompleted++
         mProxy = mTempProxy
         console.log('Completed', mProxy.length)
     }
