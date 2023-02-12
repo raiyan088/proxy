@@ -535,8 +535,8 @@ app.post('/proxy', async function (req, res) {
 
 app.get('/status', async function (req, res) {
     let status = {
-        tempSize: mTempAllProxy.length,
-        allSize: mAllProxy.length,
+        tempSize: Object.keys(mTempAllProxy).length,
+        allSize: Object.keys(mAllProxy).length,
         tempProxy: mTempProxy.length,
         proxy: mProxy.length,
         time: mTime,
