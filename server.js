@@ -638,7 +638,7 @@ function proxyCheck(proxy) {
         const proxy_options = {
             method: 'CONNECT',
             path: 'www.google.com:443',
-            timeout: 1000,
+            timeout: 3000,
             agent: false
         }
 
