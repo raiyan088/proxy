@@ -582,7 +582,7 @@ function checkProxyLoop(loop, list) {
                     proxy.name = split[3]
                 }
 
-                if(split.length > 4 && split[4].type > 0) {
+                if(split.length > 4 && split[4].length > 0) {
                     proxy.type = split[4]
                 }
             
