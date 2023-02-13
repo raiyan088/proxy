@@ -284,12 +284,8 @@ collectProxy()
 
 setInterval(() => {
     collectProxy()
-}, 20*60*1000)
-
-
-setInterval(() => {
     checkProxy(0)
-}, 5*60*1000)
+}, 10*60*1000)
 
 
 function getCountryCode(name) {
