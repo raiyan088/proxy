@@ -284,7 +284,6 @@ collectProxy()
 
 setInterval(() => {
     collectProxy()
-    checkProxy(0)
 }, 10*60*1000)
 
 
