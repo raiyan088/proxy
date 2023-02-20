@@ -603,6 +603,7 @@ function checkProxyLoop(loop, list) {
     } else {
         mCompleted++
         mProxy = mTempProxy
+        mProxy.push("185.135.157.89:8080@@DE@2")
         console.log('Completed', mProxy.length)
     }
 }
