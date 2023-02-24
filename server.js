@@ -16,11 +16,14 @@ app.listen(process.env.PORT || 3000, ()=>{
 })
 
 let mTempAllProxy = {}
+let mTempAllProxy2 = {}
 let mAllProxy = {}
-let mTempProxy = []
-let mProxy = []
+let mTempProxy = {}
+let mProxy = {}
 let mTime = 0
 let mCompleted = 0
+let SERVER = 1
+let TOKEN = null
 
 const URL = 'https://server-9099-default-rtdb.firebaseio.com/public/proxy'
 
@@ -279,7 +282,6 @@ const country = [
 ]
 
 
-
 collectProxy()
 
 setInterval(() => {
@@ -304,15 +306,38 @@ function getCountryCode(name) {
 
 function collectProxy() {
     request({
-        url: URL+'/update.json',
+        url: URL+'/config.json',
         method: 'GET',
         json: true
     }, function (error, response, body) {
         if(!error) {
-            if(body == null) {
+            try {
+                if(body == null) {
+                    SERVER = 1
+                    updateProxy(0)
+                } else {
+                    if (body.server != null) {
+                        SERVER = parseInt(body.server)
+                    } else {
+                        SERVER = 1
+                    }
+                    if (body.token != null) {
+                        TOKEN = body.token[getSetver(SERVER)]
+                    } else {
+                        TOKEN = null
+                    }
+                    if (body.ip != null) {
+                        mProxy = body.ip
+                    }
+                    if (body.update != null) {
+                        updateProxy(parseInt(body.update))
+                    } else {
+                        updateProxy(0)
+                    }
+                }
+            } catch (e) {
+                SERVER = 1
                 updateProxy(0)
-            } else {
-                updateProxy(body)
             }
         }
     })
@@ -320,12 +345,78 @@ function collectProxy() {
 
 function updateProxy(time) {
     mTempAllProxy = {}
+    mTempAllProxy2 = {}
+    mTempProxy = {}
 
     mTime = time
 
     if(time < new Date().getTime()) {
+        collectProxy1()
+    } else {
         request({
-            url: 'https://free-proxy-list.net/',
+            url: URL+'/ip.json',
+            method: 'GET',
+            json: true
+        }, function (error, response, body) {
+            if(!error && body) {
+                for (let i = 0; i < body.length; i++) {
+                    for(let [key, value] of Object.entries(body[i])) {
+                        mTempAllProxy[key] = value
+                    }
+                }
+                collectProxy3()
+                mAllProxy = mTempAllProxy
+                checkProxy(0)
+            }
+        })
+    }
+}
+
+function collectProxy1() {
+    if(TOKEN) {
+        request({
+            url: 'https://proxy.webshare.io/api/v2/proxy/list/?mode=direct',
+            headers: {
+                'authorization': 'Token '+TOKEN
+            },
+            json: true
+        }, function (error, response, body) {
+            try {
+                let list = body.results
+                for (let i = 0; i < list.length; i++) {
+                    let ip = list[i].proxy_address.replace(/\./g, '_')
+                    mTempProxy[ip] = list[i].port+'@'+list[i].username+':'+list[i].password+'@'+list[i].country_code+'@1'
+                }
+            } catch (e) {}
+            collectProxy2()
+        })
+    } else {
+        collectProxy2()
+    }
+}
+
+function collectProxy2() {
+    request({
+        url: 'https://free-proxy-list.net/',
+        method: 'GET'
+    }, function (error, response, body) {
+        try {
+            let start = body.indexOf('<tbody>')
+            let end = body.indexOf('</tbody>')
+            let table = body.substring(start+7, end).split('</tr>')
+            for (let i = 0; i<table.length-1; i++) {
+                try {
+                    let row = table[i].split('</td>')
+                    let ip = row[0].replace('<tr>','').replace('<td>','')
+                    let port = row[1].replace('<tr>','').replace('<td>','')
+                    let name = row[2].replace('<tr>','').replace('<td>','')
+                    mTempAllProxy[ip.replace(/\./g, '_')] = port+'@@'+name+'@3'
+                } catch (e) {}
+            }
+        } catch (error) {}
+
+        request({
+            url: 'https://us-proxy.org/',
             method: 'GET'
         }, function (error, response, body) {
             try {
@@ -338,138 +429,450 @@ function updateProxy(time) {
                         let ip = row[0].replace('<tr>','').replace('<td>','')
                         let port = row[1].replace('<tr>','').replace('<td>','')
                         let name = row[2].replace('<tr>','').replace('<td>','')
-                        mTempAllProxy[ip.replace(/\./g, '_')] = port+'@@'+name+'@1'
+                        mTempAllProxy[ip.replace(/\./g, '_')] = port+'@@'+name+'@3'
                     } catch (e) {}
                 }
-                
-                request({
-                    url: 'https://us-proxy.org/',
-                    method: 'GET'
-                }, function (error, response, body) {
-                    try {
-                        let start = body.indexOf('<tbody>')
-                        let end = body.indexOf('</tbody>')
-                        let table = body.substring(start+7, end).split('</tr>')
-                        for (let i = 0; i<table.length-1; i++) {
-                            try {
-                                let row = table[i].split('</td>')
-                                let ip = row[0].replace('<tr>','').replace('<td>','')
-                                let port = row[1].replace('<tr>','').replace('<td>','')
-                                let name = row[2].replace('<tr>','').replace('<td>','')
-                                mTempAllProxy[ip.replace(/\./g, '_')] = port+'@@'+name+'@1'
-                            } catch (e) {}
-                        }
-    
-                        request({
-                            url: 'https://sslproxies.org/',
-                            method: 'GET'
-                        }, function (error, response, body) {
-                            try {
-                                let start = body.indexOf('<tbody>')
-                                let end = body.indexOf('</tbody>')
-                                let table = body.substring(start+7, end).split('</tr>')
-                                for (let i = 0; i<table.length-1; i++) {
-                                    try {
-                                        let row = table[i].split('</td>')
-                                        let ip = row[0].replace('<tr>','').replace('<td>','')
-                                        let port = row[1].replace('<tr>','').replace('<td>','')
-                                        let name = row[2].replace('<tr>','').replace('<td>','')
-                                        mTempAllProxy[ip.replace(/\./g, '_')] = port+'@@'+name+'@1'
-                                    } catch (e) {}
-                                }
+            } catch (error) {}
 
-                                console.log('2')
-
-                                request({
-                                    url: 'https://openproxy.space/list/http',
-                                    method: 'GET'
-                                }, function (error, response, body) {
-                                    try {
-                                        let temp = body.substring(body.indexOf('window.__NUXT__='), body.length)
-                                        temp = temp.substring(0, temp.indexOf('</script>'))
-                                        let split = temp.split('code:')
-
-                                        for (let i=1; i<split.length; i++) {
-                                            temp = split[i].substring(split[i].indexOf('"')+1)
-                                            let name = temp.substring(0, temp.indexOf('"'))
-                                            temp = split[i].substring(split[i].indexOf('[')+1)
-                                            temp = temp.substring(0, temp.indexOf(']'))
-                                            let ips = temp.split(',')
-                                            for (let j=0; j<ips.length; j++) {
-                                                let ip = ips[j].substring(ips[j].indexOf('"')+1, ips[j].lastIndexOf('"'))
-                                                if(ip.length > 10) {
-                                                    let i_p = ip.split(':')
-                                                    mTempAllProxy[i_p[0].replace(/\./g, '_')] = i_p[1]+'@@'+name+'@3'
-                                                }
-                                            }
-                                        }
-
-                                        if(Object.keys(mTempAllProxy).length > 0) {
-                                            updateData('ip', mTempAllProxy)
-                                        }
-
-                                        console.log(Object.keys(mTempAllProxy).length)
-        
-                                        collectServer2(1)
-                                    } catch (error) {
-                                        mAllProxy = mTempAllProxy
-                                        if(Object.keys(mAllProxy).length > 0) {
-                                            setData('update', new Date().getTime()+(60*60*1000))
-                                            updateData('ip', mAllProxy)
-                                            checkProxy(0)
-                                        }
-                                    }
-                                })
-                            } catch (error) {
-                                mAllProxy = mTempAllProxy
-                                if(Object.keys(mAllProxy).length > 0) {
-                                    setData('update', new Date().getTime()+(60*60*1000))
-                                    updateData('ip', mAllProxy)
-                                    checkProxy(0)
-                                }
-                            }
-                        })
-                    } catch (error) {
-                        mAllProxy = mTempAllProxy
-                        if(Object.keys(mAllProxy).length > 0) {
-                            setData('update', new Date().getTime()+(60*60*1000))
-                            updateData('ip', mAllProxy)
-                            checkProxy(0)
-                        }
+            request({
+                url: 'https://sslproxies.org/',
+                method: 'GET'
+            }, function (error, response, body) {
+                try {
+                    let start = body.indexOf('<tbody>')
+                    let end = body.indexOf('</tbody>')
+                    let table = body.substring(start+7, end).split('</tr>')
+                    for (let i = 0; i<table.length-1; i++) {
+                        try {
+                            let row = table[i].split('</td>')
+                            let ip = row[0].replace('<tr>','').replace('<td>','')
+                            let port = row[1].replace('<tr>','').replace('<td>','')
+                            let name = row[2].replace('<tr>','').replace('<td>','')
+                            mTempAllProxy[ip.replace(/\./g, '_')] = port+'@@'+name+'@3'
+                        } catch (e) {}
                     }
-                })
-            } catch (error) {
-                mAllProxy = mTempAllProxy
-                if(Object.keys(mAllProxy).length > 0) {
-                    setData('update', new Date().getTime()+(60*60*1000))
-                    updateData('ip', mAllProxy)
-                    checkProxy(0)
+                } catch (error) {}
+
+                if(Object.keys(mTempAllProxy).length == 0) {
+                    request({
+                        url: URL+'/ip/0.json',
+                        method: 'GET',
+                        json: true
+                    }, function (error, response, body) {
+                        if(!error && body) {
+                            for(let [key, value] of Object.entries(body)) {
+                                mTempAllProxy[key] = value
+                            }
+                        }
+                        collectProxy3()
+                        collectProxy4(1)
+                    })
+                } else {
+                    updateData('ip/0', mTempAllProxy)
+                    console.log('Upload ip-1')
+                    collectProxy3()
+                    collectProxy4(1)
                 }
-            }
+            })
         })
-    } else {
-        request({
-            url: URL+'/ip.json',
-            method: 'GET',
-            json: true
-        }, function (error, response, body) {
-            if(!error && body) {
-                for(let [key, value] of Object.entries(body)) {
-                    mAllProxy[key] = value
-                }
-                checkProxy(0)
-            }
-        })
-    }
+    })
 }
 
-function collectServer2(page) {
+function collectProxy3() {
+    mTempAllProxy['176_113_73_104'] = '3128@@@4'
+    mTempAllProxy['176_113_73_99'] = '3128@@@4'
+    mTempAllProxy['67_205_190_164'] = '8080@@@4'
+    mTempAllProxy['46_21_153_16'] = '3128@@@4'
+    mTempAllProxy['84_17_35_129'] = '3128@@@4'
+    mTempAllProxy['104_248_59_38'] = '80@@@4'
+    mTempAllProxy['12_156_45_155'] = '3128@@@4'
+    mTempAllProxy['176_113_73_102'] = '3128@@@4'
+    mTempAllProxy['141_11_250_80'] = '80@@@4'
+    mTempAllProxy['173_82_71_130'] = '1994@@@4'
+    mTempAllProxy['162_144_236_128'] = '80@@@4'
+    mTempAllProxy['174_108_200_2'] = '8080@@@4'
+    mTempAllProxy['208_109_32_60'] = '81@@@4'
+    mTempAllProxy['3_234_140_61'] = '9999@@@4'
+    mTempAllProxy['149_28_218_51'] = '80@@@4'
+    mTempAllProxy['193_122_197_154'] = '80@@@4'
+    mTempAllProxy['3_13_80_246'] = '8989@@@4'
+    mTempAllProxy['142_11_222_22'] = '80@@@4'
+    mTempAllProxy['143_198_2_220'] = '8080@@@4'
+    mTempAllProxy['104_194_224_204'] = '1994@@@4'
+    mTempAllProxy['63_40_237_21'] = '80@@@4'
+    mTempAllProxy['167_99_124_118'] = '80@@@4'
+    mTempAllProxy['128_14_27_145'] = '80@@@4'
+    mTempAllProxy['71_14_23_121'] = '8080@@@4'
+    mTempAllProxy['128_14_27_138'] = '80@@@4'
+    mTempAllProxy['173_82_43_108'] = '1994@@@4'
+    mTempAllProxy['161_35_235_149'] = '3128@@@4'
+    mTempAllProxy['192_227_194_54'] = '3128@@@4'
+    mTempAllProxy['100_42_69_66'] = '1994@@@4'
+    mTempAllProxy['24_51_32_59'] = '8080@@@4'
+    mTempAllProxy['75_101_218_120'] = '80@@@4'
+    mTempAllProxy['45_86_209_108'] = '3128@@@4'
+    mTempAllProxy['198_211_55_167'] = '1994@@@4'
+    mTempAllProxy['170_178_193_106'] = '1994@@@4'
+    mTempAllProxy['162_240_75_37'] = '80@@@4'
+    mTempAllProxy['23_239_10_61'] = '3128@@@4'
+    mTempAllProxy['45_35_13_169'] = '8080@@@4'
+    mTempAllProxy['191_101_1_116'] = '80@@@4'
+    mTempAllProxy['45_79_17_203'] = '80@@@4'
+    mTempAllProxy['12_218_209_130'] = '53281@@@4'
+    mTempAllProxy['173_82_74_215'] = '1994@@@4'
+    mTempAllProxy['192_236_160_186'] = '80@@@4'
+    mTempAllProxy['192_227_166_144'] = '1994@@@4'
+    mTempAllProxy['54_210_239_35'] = '80@@@4'
+    mTempAllProxy['34_75_202_63'] = '80@@@4'
+    mTempAllProxy['174_73_158_152'] = '3129@@@4'
+    mTempAllProxy['54_162_154_65'] = '5000@@@4'
+    mTempAllProxy['108_166_223_185'] = '1994@@@4'
+    mTempAllProxy['132_145_212_19'] = '3128@@@4'
+    mTempAllProxy['68_178_161_107'] = '80@@@4'
+    mTempAllProxy['104_236_78_102'] = '3128@@@4'
+    mTempAllProxy['168_235_69_34'] = '80@@@4'
+    mTempAllProxy['104_194_232_179'] = '1994@@@4'
+    mTempAllProxy['44_159_12_58'] = '8080@@@4'
+    mTempAllProxy['45_72_110_156'] = '8118@@@4'
+    mTempAllProxy['208_70_77_222'] = '1994@@@4'
+    mTempAllProxy['37_120_222_132'] = '3128@@@4'
+    mTempAllProxy['89_249_65_191'] = '3128@@@4'
+    mTempAllProxy['144_91_118_176'] = '3128@@@4'
+    mTempAllProxy['85_214_94_28'] = '3128@@@4'
+    mTempAllProxy['167_172_109_12'] = '39452@@@4'
+    mTempAllProxy['95_111_226_235'] = '3128@@@4'
+    mTempAllProxy['167_172_109_12'] = '40825@@@4'
+    mTempAllProxy['185_189_112_157'] = '3128@@@4'
+    mTempAllProxy['185_189_112_133'] = '3128@@@4'
+    mTempAllProxy['85_214_244_174'] = '3128@@@4'
+    mTempAllProxy['167_172_109_12'] = '41491@@@4'
+    mTempAllProxy['167_172_109_12'] = '39533@@@4'
+    mTempAllProxy['167_172_109_12'] = '46249@@@4'
+    mTempAllProxy['88_99_10_252'] = '1080@@@4'
+    mTempAllProxy['167_172_109_12'] = '37355@@@4'
+    mTempAllProxy['194_163_45_239'] = '3128@@@4'
+    mTempAllProxy['148_251_110_147'] = '3128@@@4'
+    mTempAllProxy['82_165_105_48'] = '80@@@4'
+    mTempAllProxy['94_130_65_231'] = '4444@@@4'
+    mTempAllProxy['185_33_181_41'] = '80@@@4'
+    mTempAllProxy['176_9_248_241'] = '80@@@4'
+    mTempAllProxy['185_211_6_165'] = '10000@@@4'
+    mTempAllProxy['5_189_166_169'] = '22@@@4'
+    mTempAllProxy['213_133_102_103'] = '80@@@4'
+    mTempAllProxy['164_90_223_67'] = '8088@@@4'
+    mTempAllProxy['144_91_88_27'] = '3128@@@4'
+    mTempAllProxy['88_198_125_157'] = '3128@@@4'
+    mTempAllProxy['138_201_243_84'] = '8080@@@4'
+    mTempAllProxy['144_76_75_25'] = '4444@@@4'
+    mTempAllProxy['94_130_72_244'] = '3128@@@4'
+    mTempAllProxy['116_203_252_129'] = '8080@@@4'
+    mTempAllProxy['88_150_15_30'] = '80@@@4'
+    mTempAllProxy['116_203_254_38'] = '80@@@4'
+    mTempAllProxy['207_180_250_238'] = '80@@@4'
+    mTempAllProxy['116_202_165_119'] = '3124@@@4'
+    mTempAllProxy['138_201_111_171'] = '8080@@@4'
+    mTempAllProxy['82_165_184_53'] = '80@@@4'
+    mTempAllProxy['5_189_146_57'] = '80@@@4'
+    mTempAllProxy['195_201_231_22'] = '8080@@@4'
+    mTempAllProxy['185_135_157_89'] = '8080@@@4'
+    mTempAllProxy['161_97_133_233'] = '3128@@@4'
+    mTempAllProxy['94_130_67_242'] = '80@@@4'
+    mTempAllProxy['192_248_190_103'] = '3128@@@4'
+    mTempAllProxy['82_165_21_59'] = '80@@@4'
+    mTempAllProxy['65_109_84_104'] = '80@@@4'
+    mTempAllProxy['195_201_216_194'] = '80@@@4'
+    mTempAllProxy['89_58_39_225'] = '80@@@4'
+    mTempAllProxy['51_158_68_133'] = '8811@@@4'
+    mTempAllProxy['51_158_68_68'] = '8811@@@4'
+    mTempAllProxy['159_8_114_37'] = '80@@@4'
+    mTempAllProxy['35_180_188_216'] = '80@@@4'
+    mTempAllProxy['51_158_172_165'] = '8811@@@4'
+    mTempAllProxy['159_8_114_37'] = '8123@@@4'
+    mTempAllProxy['89_44_9_172'] = '3128@@@4'
+    mTempAllProxy['54_37_105_157'] = '8080@@@4'
+    mTempAllProxy['146_59_14_159'] = '80@@@4'
+    mTempAllProxy['51_91_109_83'] = '80@@@4'
+    mTempAllProxy['82_64_233_180'] = '80@@@4'
+    mTempAllProxy['51_178_106_44'] = '3030@@@4'
+    mTempAllProxy['37_187_20_166'] = '3128@@@4'
+    mTempAllProxy['176_168_127_74'] = '80@@@4'
+    mTempAllProxy['149_202_83_204'] = '7080@@@4'
+    mTempAllProxy['135_125_216_93'] = '80@@@4'
+    mTempAllProxy['82_66_172_182'] = '80@@@4'
+    mTempAllProxy['82_210_8_173'] = '80@@@4'
+    mTempAllProxy['164_132_170_100'] = '80@@@4'
+    mTempAllProxy['80_74_77_48'] = '80@@@4'
+    mTempAllProxy['51_159_28_20'] = '8000@@@4'
+    mTempAllProxy['212_83_135_130'] = '8090@@@4'
+    mTempAllProxy['13_229_107_106'] = '80@@@4'
+    mTempAllProxy['13_229_47_109'] = '80@@@4'
+    mTempAllProxy['119_81_71_27'] = '80@@@4'
+    mTempAllProxy['119_81_71_27'] = '8123@@@4'
+    mTempAllProxy['193_56_255_179'] = '3128@@@4'
+    mTempAllProxy['139_180_140_254'] = '1080@@@4'
+    mTempAllProxy['104_248_146_99'] = '3128@@@4'
+    mTempAllProxy['18_141_177_23'] = '80@@@4'
+    mTempAllProxy['193_56_255_181'] = '3128@@@4'
+    mTempAllProxy['188_166_252_135'] = '8080@@@4'
+    mTempAllProxy['178_128_219_124'] = '8080@@@4'
+    mTempAllProxy['13_76_171_61'] = '3128@@@4'
+    mTempAllProxy['172_104_40_124'] = '3128@@@4'
+    mTempAllProxy['206_189_146_13'] = '8080@@@4'
+    mTempAllProxy['47_241_122_19'] = '80@@@4'
+    mTempAllProxy['68_183_185_62'] = '80@@@4'
+    mTempAllProxy['209_97_171_82'] = '8080@@@4'
+    mTempAllProxy['3_1_18_166'] = '3128@@@4'
+    mTempAllProxy['206_189_130_107'] = '8080@@@4'
+    mTempAllProxy['15_207_196_77'] = '3128@@@4'
+    mTempAllProxy['13_71_80_224'] = '80@@@4'
+    mTempAllProxy['103_47_67_154'] = '8080@@@4'
+    mTempAllProxy['202_91_70_202'] = '84@@@4'
+    mTempAllProxy['43_205_181_141'] = '3128@@@4'
+    mTempAllProxy['103_141_247_6'] = '8080@@@4'
+    mTempAllProxy['115_247_146_65'] = '8080@@@4'
+    mTempAllProxy['115_240_163_31'] = '80@@@4'
+    mTempAllProxy['122_166_206_148'] = '3127@@@4'
+    mTempAllProxy['103_51_21_250'] = '83@@@4'
+    mTempAllProxy['103_248_120_5'] = '8080@@@4'
+    mTempAllProxy['182_72_234_138'] = '3127@@@4'
+    mTempAllProxy['103_168_164_26'] = '83@@@4'
+    mTempAllProxy['182_70_117_107'] = '83@@@4'
+    mTempAllProxy['103_83_146_54'] = '8080@@@4'
+    mTempAllProxy['222_129_38_21'] = '57114@@@4'
+    mTempAllProxy['106_45_221_168'] = '3256@@@4'
+    mTempAllProxy['113_121_240_114'] = '3256@@@4'
+    mTempAllProxy['121_206_205_75'] = '4216@@@4'
+    mTempAllProxy['115_221_242_131'] = '9999@@@4'
+    mTempAllProxy['125_87_82_86'] = '3256@@@4'
+    mTempAllProxy['183_164_254_8'] = '4216@@@4'
+    mTempAllProxy['116_242_89_230'] = '3128@@@4'
+    mTempAllProxy['119_84_215_127'] = '3256@@@4'
+    mTempAllProxy['113_195_224_222'] = '9999@@@4'
+    mTempAllProxy['112_98_218_73'] = '57658@@@4'
+    mTempAllProxy['223_113_89_138'] = '1080@@@4'
+    mTempAllProxy['36_7_252_165'] = '3256@@@4'
+    mTempAllProxy['113_100_209_184'] = '3128@@@4'
+    mTempAllProxy['111_40_62_176'] = '9091@@@4'
+    mTempAllProxy['124_220_168_140'] = '3128@@@4'
+    mTempAllProxy['79_122_230_20'] = '8080@@@4'
+    mTempAllProxy['213_59_156_119'] = '3128@@@4'
+    mTempAllProxy['80_244_236_205'] = '1256@@@4'
+    mTempAllProxy['87_76_1_69'] = '8080@@@4'
+    mTempAllProxy['178_218_88_12'] = '8123@@@4'
+    mTempAllProxy['213_87_106_117'] = '3128@@@4'
+    mTempAllProxy['91_143_175_57'] = '8080@@@4'
+    mTempAllProxy['188_235_0_207'] = '8282@@@4'
+    mTempAllProxy['94_73_239_124'] = '55443@@@4'
+    mTempAllProxy['87_255_6_218'] = '8080@@@4'
+    mTempAllProxy['213_171_63_210'] = '41890@@@4'
+    mTempAllProxy['194_186_35_70'] = '3128@@@4'
+    mTempAllProxy['195_3_245_193'] = '3128@@@4'
+    mTempAllProxy['77_236_236_85'] = '8080@@@4'
+    mTempAllProxy['95_154_76_20'] = '3128@@@4'
+    mTempAllProxy['79_111_13_155'] = '50625@@@4'
+    mTempAllProxy['190_60_28_31'] = '80@@@4'
+    mTempAllProxy['190_7_112_12'] = '3130@@@4'
+    mTempAllProxy['200_25_254_193'] = '54240@@@4'
+    mTempAllProxy['191_102_68_105'] = '999@@@4'
+    mTempAllProxy['191_102_74_138'] = '999@@@4'
+    mTempAllProxy['45_173_6_5'] = '999@@@4'
+    mTempAllProxy['181_205_132_98'] = '999@@@4'
+    mTempAllProxy['181_143_224_43'] = '999@@@4'
+    mTempAllProxy['181_129_208_27'] = '999@@@4'
+    mTempAllProxy['191_102_90_116'] = '999@@@4'
+    mTempAllProxy['177_93_36_50'] = '999@@@4'
+    mTempAllProxy['190_90_79_106'] = '999@@@4'
+    mTempAllProxy['181_78_8_215'] = '999@@@4'
+    mTempAllProxy['190_145_171_198'] = '1994@@@4'
+    mTempAllProxy['190_121_143_129'] = '999@@@4'
+    mTempAllProxy['81_12_119_171'] = '8080@@@4'
+    mTempAllProxy['217_172_122_14'] = '8080@@@4'
+    mTempAllProxy['185_83_197_154'] = '8080@@@4'
+    mTempAllProxy['188_136_154_38'] = '8080@@@4'
+    mTempAllProxy['5_202_191_225'] = '8080@@@4'
+    mTempAllProxy['5_202_103_100'] = '514@@@4'
+    mTempAllProxy['217_66_200_154'] = '3128@@@4'
+    mTempAllProxy['185_3_214_3'] = '80@@@4'
+    mTempAllProxy['92_119_71_90'] = '8880@@@4'
+    mTempAllProxy['109_201_9_100'] = '8080@@@4'
+    mTempAllProxy['89_43_10_141'] = '80@@@4'
+    mTempAllProxy['212_16_71_187'] = '80@@@4'
+    mTempAllProxy['185_105_184_41'] = '443@@@4'
+    mTempAllProxy['37_120_133_137'] = '3128@@@4'
+    mTempAllProxy['84_17_51_235'] = '3128@@@4'
+    mTempAllProxy['84_17_51_241'] = '3128@@@4'
+    mTempAllProxy['84_17_51_240'] = '3128@@@4'
+    mTempAllProxy['94_177_249_42'] = '3128@@@4'
+    mTempAllProxy['178_128_172_154'] = '3128@@@4'
+    mTempAllProxy['134_209_189_42'] = '80@@@4'
+    mTempAllProxy['136_228_234_29'] = '8082@@@4'
+    mTempAllProxy['136_228_234_4'] = '8009@@@4'
+    mTempAllProxy['119_81_189_194'] = '80@@@4'
+    mTempAllProxy['119_81_189_194'] = '8123@@@4'
+    mTempAllProxy['193_239_86_249'] = '3128@@@4'
+    mTempAllProxy['193_239_86_247'] = '3128@@@4'
+    mTempAllProxy['193_239_86_248'] = '3128@@@4'
+    mTempAllProxy['42_98_75_138'] = '80@@@4'
+    mTempAllProxy['45_142_106_133'] = '80@@@4'
+    mTempAllProxy['218_250_67_85'] = '80@@@4'
+    mTempAllProxy['43_129_223_147'] = '38080@@@4'
+    mTempAllProxy['185_123_101_174'] = '3128@@@4'
+    mTempAllProxy['93_180_135_243'] = '3128@@@4'
+    mTempAllProxy['92_119_59_118'] = '3128@@@4'
+    mTempAllProxy['46_1_103_186'] = '10001@@@4'
+    mTempAllProxy['176_33_14_34'] = '3127@@@4'
+    mTempAllProxy['45_156_31_185'] = '9090@@@4'
+    mTempAllProxy['176_236_85_246'] = '9090@@@4'
+    mTempAllProxy['31_223_6_135'] = '9090@@@4'
+    mTempAllProxy['188_166_30_17'] = '8888@@@4'
+    mTempAllProxy['79_110_52_252'] = '3128@@@4'
+    mTempAllProxy['94_100_18_111'] = '3128@@@4'
+    mTempAllProxy['185_234_217_147'] = '39811@@@4'
+    mTempAllProxy['13_81_217_201'] = '80@@@4'
+    mTempAllProxy['188_166_56_246'] = '80@@@4'
+    mTempAllProxy['20_71_241_197'] = '80@@@4'
+    mTempAllProxy['180_183_97_16'] = '8080@@@4'
+    mTempAllProxy['113_53_53_7'] = '8080@@@4'
+    mTempAllProxy['14_207_18_198'] = '8080@@@4'
+    mTempAllProxy['1_1_220_100'] = '8080@@@4'
+    mTempAllProxy['14_207_166_225'] = '8080@@@4'
+    mTempAllProxy['110_77_146_152'] = '8080@@@4'
+    mTempAllProxy['101_109_48_185'] = '8080@@@4'
+    mTempAllProxy['159_89_113_155'] = '8080@@@4'
+    mTempAllProxy['159_203_13_121'] = '80@@@4'
+    mTempAllProxy['107_6_27_132'] = '80@@@4'
+    mTempAllProxy['167_114_19_195'] = '8050@@@4'
+    mTempAllProxy['66_85_30_138'] = '80@@@4'
+    mTempAllProxy['204_83_205_117'] = '3128@@@4'
+    mTempAllProxy['15_223_7_246'] = '3128@@@4'
+    mTempAllProxy['161_202_226_194'] = '8123@@@4'
+    mTempAllProxy['152_32_202_108'] = '80@@@4'
+    mTempAllProxy['140_227_25_191'] = '23456@@@4'
+    mTempAllProxy['128_22_123_175'] = '80@@@4'
+    mTempAllProxy['138_2_55_182'] = '8080@@@4'
+    mTempAllProxy['163_44_253_160'] = '80@@@4'
+    mTempAllProxy['34_84_72_91'] = '3128@@@4'
+    mTempAllProxy['45_70_198_37'] = '1994@@@4'
+    mTempAllProxy['190_152_182_150'] = '41890@@@4'
+    mTempAllProxy['45_229_87_233'] = '999@@@4'
+    mTempAllProxy['45_70_236_194'] = '999@@@4'
+    mTempAllProxy['177_234_209_118'] = '999@@@4'
+    mTempAllProxy['157_100_53_110'] = '999@@@4'
+    mTempAllProxy['154_236_177_117'] = '1981@@@4'
+    mTempAllProxy['156_200_116_69'] = '1981@@@4'
+    mTempAllProxy['196_204_24_251'] = '8080@@@4'
+    mTempAllProxy['41_65_67_166'] = '1976@@@4'
+    mTempAllProxy['217_52_247_87'] = '1976@@@4'
+    mTempAllProxy['154_236_179_233'] = '1981@@@4'
+    mTempAllProxy['38_41_0_91'] = '999@@@4'
+    mTempAllProxy['45_234_61_6'] = '999@@@4'
+    mTempAllProxy['190_97_255_37'] = '999@@@4'
+    mTempAllProxy['38_41_4_118'] = '999@@@4'
+    mTempAllProxy['181_191_226_1'] = '999@@@4'
+    mTempAllProxy['190_108_82_106'] = '999@@@4'
+    mTempAllProxy['131_255_137_94'] = '80@@@4'
+    mTempAllProxy['190_43_232_159'] = '999@@@4'
+    mTempAllProxy['200_123_27_162'] = '999@@@4'
+    mTempAllProxy['45_174_87_18'] = '999@@@4'
+    mTempAllProxy['187_190_249_113'] = '1994@@@4'
+    mTempAllProxy['45_230_172_182'] = '8080@@@4'
+    mTempAllProxy['45_188_166_50'] = '1994@@@4'
+    mTempAllProxy['185_123_143_251'] = '3128@@@4'
+    mTempAllProxy['185_123_143_247'] = '3128@@@4'
+    mTempAllProxy['37_120_140_158'] = '3128@@@4'
+    mTempAllProxy['118_99_108_4'] = '8080@@@4'
+    mTempAllProxy['103_114_53_2'] = '8080@@@4'
+    mTempAllProxy['182_253_109_100'] = '8080@@@4'
+    mTempAllProxy['103_28_121_58'] = '3128@@@4'
+    mTempAllProxy['103_28_121_58'] = '80@@@4'
+    mTempAllProxy['103_119_95_2'] = '80@@@4'
+    mTempAllProxy['138_0_123_233'] = '999@@@4'
+    mTempAllProxy['181_212_41_172'] = '999@@@4'
+    mTempAllProxy['200_54_194_13'] = '53281@@@4'
+    mTempAllProxy['113_161_131_43'] = '80@@@4'
+    mTempAllProxy['221_132_18_26'] = '8090@@@4'
+    mTempAllProxy['113_160_37_152'] = '53281@@@4'
+    mTempAllProxy['190_61_88_154'] = '999@@@4'
+    mTempAllProxy['190_61_101_205'] = '8080@@@4'
+    mTempAllProxy['190_61_88_147'] = '8080@@@4'
+    mTempAllProxy['115_144_102_39'] = '10080@@@4'
+    mTempAllProxy['59_26_24_127'] = '808@@@4'
+    mTempAllProxy['115_144_101_200'] = '10000@@@4'
+    mTempAllProxy['80_252_5_34'] = '7001@@@4'
+    mTempAllProxy['194_31_53_250'] = '80@@@4'
+    mTempAllProxy['83_238_80_10'] = '8081@@@4'
+    mTempAllProxy['169_57_157_148'] = '80@@@4'
+    mTempAllProxy['169_57_157_146'] = '8123@@@4'
+    mTempAllProxy['185_236_202_205'] = '3128@@@4'
+    mTempAllProxy['185_236_202_170'] = '3128@@@4'
+    mTempAllProxy['185_74_6_248'] = '8080@@@4'
+    mTempAllProxy['213_230_65_9'] = '3128@@@4'
+    mTempAllProxy['85_117_56_147'] = '8080@@@4'
+    mTempAllProxy['80_241_251_54'] = '8080@@@4'
+    mTempAllProxy['82_223_102_92'] = '9443@@@4'
+    mTempAllProxy['188_240_192_92'] = '8090@@@4'
+    mTempAllProxy['134_195_242_1'] = '999@@@4'
+    mTempAllProxy['184_95_3_146'] = '8888@@@4'
+    mTempAllProxy['41_57_37_50'] = '8080@@@4'
+    mTempAllProxy['105_19_63_217'] = '9812@@@4'
+    mTempAllProxy['52_30_164_26'] = '80@@@4'
+    mTempAllProxy['137_135_187_185'] = '80@@@4'
+    mTempAllProxy['41_184_188_25'] = '8080@@@4'
+    mTempAllProxy['41_203_83_242'] = '8080@@@4'
+    mTempAllProxy['190_113_42_162'] = '999@@@4'
+    mTempAllProxy['201_229_250_21'] = '8080@@@4'
+    mTempAllProxy['91_215_137_155'] = '8080@@@4'
+    mTempAllProxy['93_185_74_214'] = '8088@@@4'
+    mTempAllProxy['95_216_17_79'] = '3888@@@4'
+    mTempAllProxy['3_24_178_81'] = '80@@@4'
+    mTempAllProxy['185_236_203_208'] = '3128@@@4'
+    mTempAllProxy['193_34_95_110'] = '8080@@@4'
+    mTempAllProxy['185_38_111_1'] = '8080@@@4'
+    mTempAllProxy['95_170_219_13'] = '8080@@@4'
+    mTempAllProxy['41_93_71_21'] = '80@@@4'
+    mTempAllProxy['190_52_165_120'] = '8080@@@4'
+    mTempAllProxy['103_69_2_137'] = '999@@@4'
+    mTempAllProxy['200_85_169_18'] = '47548@@@4'
+    mTempAllProxy['201_217_246_178'] = '8080@@@4'
+    mTempAllProxy['41_204_87_90'] = '8080@@@4'
+    mTempAllProxy['165_16_46_215'] = '8080@@@4'
+    mTempAllProxy['194_169_167_5'] = '8080@@@4'
+    mTempAllProxy['95_214_8_128'] = '3128@@@4'
+    mTempAllProxy['197_248_184_158'] = '53281@@@4'
+    mTempAllProxy['212_112_127_20'] = '8080@@@4'
+    mTempAllProxy['217_165_94_240'] = '53281@@@4'
+    mTempAllProxy['151_22_181_205'] = '8080@@@4'
+    mTempAllProxy['179_49_117_17'] = '999@@@4'
+    mTempAllProxy['197_243_20_178'] = '80@@@4'
+    mTempAllProxy['1_171_143_153'] = '8080@@@4'
+    mTempAllProxy['113_23_176_254'] = '8118@@@4'
+    mTempAllProxy['213_6_17_251'] = '19000'
+}
+
+function collectProxy4(page) {
     if(page > 5) {
-        mAllProxy = mTempAllProxy
-        if(Object.keys(mAllProxy).length > 0) {
-            setData('update', new Date().getTime()+(60*60*1000))
-            updateData('ip', mAllProxy)
-            checkProxy(0)
+        if(page == 99) {
+            request({
+                url: URL+'/ip/1.json',
+                method: 'GET',
+                json: true
+            }, function (error, response, body) {
+                if(!error && body) {
+                    for(let [key, value] of Object.entries(body)) {
+                        mTempAllProxy[key] = value
+                    }
+                }
+                setData('config/update', new Date().getTime()+(60*60*1000))
+                checkProxy(0)
+            })
+        } else {
+            mAllProxy = mTempAllProxy
+            if(Object.keys(mAllProxy).length > 0) {
+                setData('config/update', new Date().getTime()+(60*60*1000))
+                updateData('ip/1', mTempAllProxy2)
+                console.log('Upload ip-2')
+                checkProxy(0)
+            }
         }
     } else {
         request({
@@ -485,6 +888,7 @@ function collectServer2(page) {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
             }
         }, function (error, response, body) {
+            let size = 0
             try {
                 let start = body.indexOf('<tbody>')
                 let end = body.indexOf('</tbody>')
@@ -499,20 +903,18 @@ function collectServer2(page) {
                         temp = row[3].substring(row[3].indexOf('<a'), row[3].indexOf('</a>'))
                         let name = temp.substring(temp.indexOf('>')+1)
                  
-                        mTempAllProxy[ip.replace(/\./g, '_')] = port+'@@'+getCountryCode(name)+'@2'
+                        let ips = ip.replace(/\./g, '_')
+                        mTempAllProxy[ips] = port+'@@'+getCountryCode(name)+'@2'
+                        mTempAllProxy2[ips] = mTempAllProxy[ips]
+                        size++
                     } catch (e) {}
                 }
+            } catch (error) {}
 
-                
-                collectServer2(page+1)
-                
-            } catch (error) {
-                mAllProxy = mTempAllProxy
-                if(Object.keys(mAllProxy).length > 0) {
-                    setData('update', new Date().getTime()+(60*60*1000))
-                    updateData('ip', mAllProxy)
-                    checkProxy(0)
-                }
+            if(size > 0) {
+                collectProxy4(page+1)
+            } else {
+                collectProxy4(99)
             }
         })
     }
@@ -521,8 +923,11 @@ function collectServer2(page) {
 
 app.post('/proxy', async function (req, res) {
     if(req.body && req.body.data && req.body.data == SIGNATURE) {
-        mProxy.sort(() => (Math.random() > .5) ? 1 : -1)
-        res.end(JSON.stringify(mProxy))
+        let proxy = []
+        for(let [key, value] of Object.entries(mProxy)) {
+            proxy.push(key.replace(/\_/g, '.')+':'+value)
+        }
+        res.end(JSON.stringify(proxy))
     } else {
         res.end('error')
     }
@@ -530,10 +935,10 @@ app.post('/proxy', async function (req, res) {
 
 app.get('/status', async function (req, res) {
     let status = {
-        tempSize: Object.keys(mTempAllProxy).length,
+        tempAllSize: Object.keys(mTempAllProxy).length,
         allSize: Object.keys(mAllProxy).length,
-        tempProxy: mTempProxy.length,
-        proxy: mProxy.length,
+        tempProxy: Object.keys(mTempProxy).length,
+        proxy: Object.keys(mProxy).length,
         time: mTime,
         have: mTime - new Date().getTime(),
         success: mCompleted
@@ -544,8 +949,7 @@ app.get('/status', async function (req, res) {
 function checkProxy(loop) {
     
     let list = []
-    mTempProxy = []
-    
+
     for(let [key, value] of Object.entries(mAllProxy)) {
         list.push(key+'@'+value)
     }
@@ -587,7 +991,7 @@ function checkProxyLoop(loop, list) {
                 }
             
                 proxyCheck(proxy).then(res => {
-                    mTempProxy.push(res.host+':'+res.port+'@'+res.auth+'@'+res.name+'@'+res.type)
+                    mTempProxy[res.host.replace(/\./g, '_')] = res.port+'@'+res.auth+'@'+res.name+'@'+res.type
                     size++
                     if(size == length) {
                         checkProxyLoop(loop+300, list)
@@ -603,8 +1007,9 @@ function checkProxyLoop(loop, list) {
     } else {
         mCompleted++
         mProxy = mTempProxy
-        //mProxy.push("185.135.157.89:8080@@DE@2")
-        console.log('Completed', mProxy.length)
+        mProxy['185_135_157_89'] = '8080@@DE@2'
+        updateData('config/ip', mProxy)
+        console.log('Completed', Object.keys(mProxy).length)
     }
 }
 
@@ -629,6 +1034,16 @@ function updateData(path, data) {
         body: JSON.stringify(data)
     }, function (error, response, body) {})
 }
+
+function getSetver(id) {
+    let zero = ''
+    let loop = id.toString().length
+    for(let i=0; i<2-loop; i++) {
+        zero += '0'
+    }
+    return 'server_'+zero+id
+}
+
 
 function proxyCheck(proxy) {
     return new Promise((resolve, reject) => {
@@ -674,6 +1089,5 @@ function proxyCheck(proxy) {
         })
 
         req.end()
-
     })
 }
