@@ -359,14 +359,30 @@ function updateProxy(time) {
             json: true
         }, function (error, response, body) {
             if(!error && body) {
-                for (let i = 0; i < body.length; i++) {
-                    for(let [key, value] of Object.entries(body[i])) {
-                        mTempAllProxy[key] = value
-                    }
+                for (let i = 0; i < Object.entries(body).length; i++) {
+                    try {
+                        for(let [key, value] of Object.entries(body[i])) {
+                            mTempAllProxy[key] = value
+                        }
+                    } catch (e) {}
                 }
+
                 collectProxy3()
                 mAllProxy = mTempAllProxy
-                checkProxy(0)
+                
+                request({
+                    url: URL+'/webshare.json',
+                    method: 'GET',
+                    json: true
+                }, function (error, response, body) {
+                    try {
+                        for(let [key, value] of Object.entries(body)) {
+                            mTempProxy[key] = value
+                        }
+                    } catch (e) {}
+                    
+                    checkProxy(0)
+                })
             }
         })
     }
@@ -388,6 +404,9 @@ function collectProxy1() {
                     mTempProxy[ip] = list[i].port+'@'+list[i].username+':'+list[i].password+'@'+list[i].country_code+'@1'
                 }
             } catch (e) {}
+
+            updateData('webshare', mTempProxy)
+
             collectProxy2()
         })
     } else {
@@ -455,7 +474,7 @@ function collectProxy2() {
 
                 if(Object.keys(mTempAllProxy).length == 0) {
                     request({
-                        url: URL+'/ip/0.json',
+                        url: URL+'/ip/1.json',
                         method: 'GET',
                         json: true
                     }, function (error, response, body) {
@@ -468,7 +487,7 @@ function collectProxy2() {
                         collectProxy4(1)
                     })
                 } else {
-                    updateData('ip/0', mTempAllProxy)
+                    updateData('ip/1', mTempAllProxy)
                     console.log('Upload ip-1')
                     collectProxy3()
                     collectProxy4(1)
@@ -853,7 +872,7 @@ function collectProxy4(page) {
     if(page > 5) {
         if(page == 99) {
             request({
-                url: URL+'/ip/1.json',
+                url: URL+'/ip/2.json',
                 method: 'GET',
                 json: true
             }, function (error, response, body) {
@@ -869,7 +888,7 @@ function collectProxy4(page) {
             mAllProxy = mTempAllProxy
             if(Object.keys(mAllProxy).length > 0) {
                 setData('config/update', new Date().getTime()+(60*60*1000))
-                updateData('ip/1', mTempAllProxy2)
+                updateData('ip/2', mTempAllProxy2)
                 console.log('Upload ip-2')
                 checkProxy(0)
             }
@@ -1008,7 +1027,10 @@ function checkProxyLoop(loop, list) {
         mCompleted++
         mProxy = mTempProxy
         mProxy['185_135_157_89'] = '8080@@DE@2'
-        updateData('config/ip', mProxy)
+        
+        if(Object.keys(mProxy).length > 20) {
+            updateData('config/ip', mProxy)
+        }
         console.log('Completed', Object.keys(mProxy).length)
     }
 }
