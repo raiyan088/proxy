@@ -943,10 +943,32 @@ function collectProxy4(page) {
 app.post('/proxy', async function (req, res) {
     if(req.body && req.body.data && req.body.data == SIGNATURE) {
         let proxy = []
+        let size = 0
         for(let [key, value] of Object.entries(mProxy)) {
+            size++
             proxy.push(key.replace(/\_/g, '.')+':'+value)
         }
-        res.end(JSON.stringify(proxy))
+
+        if (size == 0) {
+            request({
+                url: URL+'/config/ip.json',
+                method: 'GET',
+                json: true
+            }, function (error, response, body) {
+                if(!error) {
+                    try {
+                        if(body != null) {
+                            for(let [key, value] of Object.entries(body)) {
+                                proxy.push(key.replace(/\_/g, '.')+':'+value)
+                            }
+                        }
+                    } catch (e) {}
+                }
+                res.end(JSON.stringify(proxy))
+            })
+        } else {
+            res.end(JSON.stringify(proxy))
+        }
     } else {
         res.end('error')
     }
