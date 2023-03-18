@@ -15,6 +15,8 @@ app.listen(process.env.PORT || 3000, ()=>{
     console.log("Listening on port 3000...")
 })
 
+let startTime = new Date().toUTCString()
+
 let mTempAllProxy = {}
 let mTempAllProxy2 = {}
 let mAllProxy = {}
@@ -985,6 +987,11 @@ app.get('/status', async function (req, res) {
         success: mCompleted
     }
     res.end(JSON.stringify(status))
+})
+
+
+app.get('/', async function (req, res) {
+    res.end(startTime)
 })
 
 function checkProxy(loop) {
