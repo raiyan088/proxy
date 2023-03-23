@@ -532,9 +532,7 @@ function updateData(path, data) {
             'content-type': 'application/x-www-form-urlencoded'
         },
         body: JSON.stringify(data)
-    }, function (error, response, body) {
-        console.log(error);
-    })
+    }, function (error, response, body) {})
 }
 
 app.get('/', async function (req, res) {
