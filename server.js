@@ -410,8 +410,8 @@ function updateOVPN(time) {
                             name = name.substring(0, 2)
                         }
                         let cmd = Buffer.from(json[i]['OpenVPN_ConfigData_Base64'], 'base64').toString('ascii')
-                        cmd += '\ndata-ciphers AES-256-CBC:AES-192-CBC:AES-128-CBC'
-                        cmd += '\ndata-ciphers-fallback AES-256-CBC:AES-192-CBC:AES-128-CBC'
+                        cmd += '\ndata-ciphers AES-128-CBC'
+                        cmd += '\ncipher AES-128-CBC'
                         let config = cmd.replace(/\n/g, 'spasse')
 
                         upload[Buffer.from(json[i]['IP']).toString('base64')] = name+'@@'+config
@@ -440,9 +440,9 @@ function updateOVPN(time) {
                                         }
                                     }
                                 })
-        
-                                cmd += 'data-ciphers AES-256-CBC:AES-192-CBC:AES-128-CBC\n'
-                                cmd += 'data-ciphers-fallback AES-256-CBC:AES-192-CBC:AES-128-CBC'
+                                
+                                cmd += 'data-ciphers AES-128-CBC\n'
+                                cmd += 'cipher AES-128-CBC'
                                 let config = cmd.replace(/\n/g, 'spasse')
 
                                 upload[ip] = name+'@@'+config
