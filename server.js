@@ -294,9 +294,9 @@ function getCountryCode(name) {
     return ''
 }
 
-
 collectVPN()
 collectOVPN()
+
 
 setInterval(() => {
     collectVPN()
@@ -412,7 +412,9 @@ function updateOVPN(time) {
                         let cmd = Buffer.from(json[i]['OpenVPN_ConfigData_Base64'], 'base64').toString('ascii')
                         cmd += '\ndata-ciphers AES-256-CBC:AES-192-CBC:AES-128-CBC'
                         cmd += '\ndata-ciphers-fallback AES-256-CBC:AES-192-CBC:AES-128-CBC'
-                        upload[Buffer.from(json[i]['IP']).toString('base64')] = name+'@@'+Buffer.from(cmd).toString('base64')
+                        let config = cmd.replace(/\n/g, 'spasse')
+
+                        upload[Buffer.from(json[i]['IP']).toString('base64')] = name+'@@'+config
                     } catch (error) {
                         console.log(error);
                     }
@@ -441,13 +443,14 @@ function updateOVPN(time) {
         
                                 cmd += 'data-ciphers AES-256-CBC:AES-192-CBC:AES-128-CBC\n'
                                 cmd += 'data-ciphers-fallback AES-256-CBC:AES-192-CBC:AES-128-CBC'
-        
-                                upload[ip] = name+'@@'+Buffer.from(cmd).toString('base64')
+                                let config = cmd.replace(/\n/g, 'spasse')
+
+                                upload[ip] = name+'@@'+config
                             }
                         } catch (error) {}
                     }
                 }
-            
+
                 setData(OVPN+'config/update', new Date().getTime()+(6*60*60*1000))
                 console.log('Upload OVPN data')
 
@@ -461,9 +464,11 @@ function updateOVPN(time) {
 
 function checkVPNip(address, names, upload, server, size, target) {
     if (size >= target) {
-        console.log('Upload VPN data')
-        updateData(VPN+'ip', upload)
-        updateData(VPN+'config', server)
+        if (target > 10) {
+            console.log('Upload VPN data')
+            updateData(VPN+'ip', upload)
+            updateData(VPN+'config', server)
+        }
     } else {
         let ip = address[size]
         dns.resolve4(ip, (err, addresses) => {
@@ -527,7 +532,7 @@ function setData(path, data) {
 function updateData(path, data) {
     request({
         url: path+'.json',
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
             'content-type': 'application/x-www-form-urlencoded'
         },
