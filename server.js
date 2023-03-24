@@ -414,7 +414,9 @@ function updateOVPN(time) {
                         cmd += '\ncipher AES-128-CBC'
                         let config = cmd.replace(/\n/g, 'spasse')
 
-                        upload[Buffer.from(json[i]['IP']).toString('base64')] = name+'@@'+config
+                        if (!json[i]['IP'].includes('1.1.1')) {
+                            upload[Buffer.from(json[i]['IP']).toString('base64')] = name+'@@'+config    
+                        }
                     } catch (error) {
                         console.log(error);
                     }
@@ -445,7 +447,9 @@ function updateOVPN(time) {
                                 cmd += 'cipher AES-128-CBC'
                                 let config = cmd.replace(/\n/g, 'spasse')
 
-                                upload[ip] = name+'@@'+config
+                                if (!ip.includes('1.1.1')) {
+                                    upload[ip] = name+'@@'+config
+                                }
                             }
                         } catch (error) {}
                     }
