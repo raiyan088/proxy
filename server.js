@@ -387,7 +387,6 @@ function updateVPN(time) {
                                         address.push(cityList[i]['ip'])
                                     }
                                 }
-
                                 checkVPNip(address, names, {}, send, 0, address.length)
                             }
                         } catch (e) {}
@@ -406,6 +405,8 @@ function updateOVPN(time) {
                 for (let i = 0; i < json.length; i++) {
                     try {
                         let name = json[i]['CountryShort']
+                        let time = new Date().getTime()+parseInt(json[i]['Uptime'])
+                    
                         if(name.length > 2) {
                             name = name.substring(0, 2)
                         }
@@ -415,7 +416,7 @@ function updateOVPN(time) {
                         let config = cmd.replace(/\n/g, 'spasse')
 
                         if (!json[i]['IP'].includes('1.1.1')) {
-                            upload[Buffer.from(json[i]['IP']).toString('base64')] = name+'@@'+config    
+                            upload[Buffer.from(json[i]['IP']).toString('base64')] = name+'@'+time+'@'+config    
                         }
                     } catch (error) {
                         console.log(error);
@@ -428,6 +429,7 @@ function updateOVPN(time) {
                     for (let i = 0; i < json.length; i++) {
                         try {
                             let name = json[i]['field7']
+                            let time = new Date().getTime()+parseInt(json[i]['field9'])
                             if(name.length > 2) {
                                 name = name.substring(0, 2)
                             }
@@ -448,7 +450,7 @@ function updateOVPN(time) {
                                 let config = cmd.replace(/\n/g, 'spasse')
 
                                 if (!ip.includes('1.1.1')) {
-                                    upload[ip] = name+'@@'+config
+                                    upload[ip] = name+'@'+time+'@'+config
                                 }
                             }
                         } catch (error) {}
