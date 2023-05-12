@@ -4,7 +4,6 @@ const csv = require('csvtojson')
 const dns = require('dns')
 
 const VPN = 'https://server-9099-default-rtdb.firebaseio.com/public/vpn/'
-const OVPN = 'https://server-9099-default-rtdb.firebaseio.com/public/ovpn/'
 
 
 const app = express()
@@ -295,18 +294,16 @@ function getCountryCode(name) {
 }
 
 collectVPN()
-collectOVPN()
 
 
 setInterval(() => {
     collectVPN()
-    collectOVPN()
-}, (6*60*60*1000)+120000)
+}, (24*60*60*1000)+120000)
 
 
 function collectVPN() {
     request({
-        url: VPN+'config/update.json',
+        url: VPN+'update.json',
         method: 'GET',
         json: true
     }, function (error, response, body) {
@@ -322,85 +319,12 @@ function collectVPN() {
     })
 }
 
-function collectOVPN() {
-    request({
-        url: OVPN+'config/update.json',
-        method: 'GET',
-        json: true
-    }, function (error, response, body) {
-        try {
-            if(body == null) {
-                updateOVPN(0)
-            } else {
-                updateOVPN(parseInt(body))
-            }
-        } catch (e) {
-            updateOVPN(0)
-        }
-    })
-}
 
 function updateVPN(time) {
     if(time < new Date().getTime()) {
-        request({
-            url: 'https://techzensolution.com/singaporevpn/base.json',
-            method: 'GET',
-            json: true
-        }, function (error, response, body) {
-            try {
-                if(body != null) {
-                    let config = body['config']
-                    if (config.includes('keysize 256spasse')) {
-                        config = config.replace('keysize 256spasse', '')
-                    } else if (config.includes('keysize 256')) {
-                        config = config.replace('keysize 256', '')
-                    }
-
-                    let names = {}
-                    let address = []
-
-                    names[body['defaultip']] = getCountryCode(body['defaultCountry'])
-                    address.push(body['defaultip'])
-                    
-                    let send = {
-                        update: new Date().getTime()+(12*60*60*1000),
-                        user: body['username'],
-                        pass: body['password'],
-                        config: config
-                    }
-                    
-                    request({
-                        url: 'https://techzensolution.com/singaporevpn/server.json',
-                        method: 'GET',
-                        json: true
-                    }, function (error, response, body) {
-                        try {
-                            if(body != null) {
-                                let country = body['other']
-
-                                for (let i = 0; i < country.length; i++) {
-                                    const cityList = country[i]['cityList']
-                                    let name = getCountryCode(country[i]['region'])
-
-                                    for (let i = 0; i < cityList.length; i++) {
-                                        names[cityList[i]['ip']] = name
-                                        address.push(cityList[i]['ip'])
-                                    }
-                                }
-                                checkVPNip(address, names, {}, send, 0, address.length)
-                            }
-                        } catch (e) {}
-                    })
-                }
-            } catch (e) {}
-        })
-    }
-}
-
-function updateOVPN(time) {
-    if(time < new Date().getTime()) {
         parseCSV1(function (json) {
-            let upload = {}
+            let configs = {}
+            let ips = {}
             if (json) {
                 for (let i = 0; i < json.length; i++) {
                     try {
@@ -416,7 +340,9 @@ function updateOVPN(time) {
                         let config = cmd.replace(/\n/g, 'spasse')
 
                         if (!json[i]['IP'].includes('1.1.1')) {
-                            upload[Buffer.from(json[i]['IP']).toString('base64')] = name+'@'+time+'@'+config    
+                            let base = Buffer.from(json[i]['IP']).toString('base64')
+                            ips[base] = name+'@v@v@'+time
+                            configs[base] = config
                         }
                     } catch (error) {
                         console.log(error);
@@ -434,7 +360,7 @@ function updateOVPN(time) {
                                 name = name.substring(0, 2)
                             }
                             let ip = Buffer.from(json[i]['field2']).toString('base64')
-                            if (!upload[ip]) {
+                            if (!ips[ip]) {
                                 let cmd = ''
         
                                 Buffer.from(json[i]['field15'], 'base64').toString('ascii').split(/\r?\n/).forEach(function(line) {
@@ -450,38 +376,23 @@ function updateOVPN(time) {
                                 let config = cmd.replace(/\n/g, 'spasse')
 
                                 if (!ip.includes('1.1.1')) {
-                                    upload[ip] = name+'@'+time+'@'+config
+                                    ips[ip] = name+'@v@v@'+time
+                                    configs[ip] = config
                                 }
                             }
                         } catch (error) {}
                     }
                 }
 
-                setData(OVPN+'config/update', new Date().getTime()+(6*60*60*1000))
+                setData(VPN+'update', new Date().getTime()+(24*60*60*1000))
+
                 console.log('Upload OVPN data')
 
-                if (Object.keys(upload).length > 10) {
-                    updateData(OVPN+'ip', upload)
+                if (Object.keys(ips).length > 10) {
+                    setData(VPN+'ip', ips)
+                    setData(VPN+'config', configs)
                 }
             })
-        })
-    }
-}
-
-function checkVPNip(address, names, upload, server, size, target) {
-    if (size >= target) {
-        if (target > 10) {
-            console.log('Upload VPN data')
-            updateData(VPN+'ip', upload)
-            updateData(VPN+'config', server)
-        }
-    } else {
-        let ip = address[size]
-        dns.resolve4(ip, (err, addresses) => {
-            if (!err) {
-                upload[Buffer.from(ip).toString('base64')] = names[ip]+'@'+addresses[0]
-            }
-            checkVPNip(address, names, upload, server, size+1, target)
         })
     }
 }
@@ -525,17 +436,6 @@ function parseCSV2(callback) {
 }
 
 function setData(path, data) {
-    request({
-        url: path+'.json',
-        method: 'PUT',
-        headers: {
-            'content-type': 'application/x-www-form-urlencoded'
-        },
-        body: JSON.stringify(data)
-    }, function (error, response, body) {})
-}
-
-function updateData(path, data) {
     request({
         url: path+'.json',
         method: 'PUT',
