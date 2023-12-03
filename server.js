@@ -18,7 +18,6 @@ app.listen(port || 3000, ()=>{
 app.use('/', (req, res, next) => {
     let url = req.url
     try {
-        let temp = url
         let http = 'http://'
         if (url.startsWith('http://')) {
             url = url.substring(7, url.length)
@@ -26,12 +25,20 @@ app.use('/', (req, res, next) => {
             http = 'https://'
             url = url.substring(8, url.length)
         }
-        url = http+url.substring(0, url.indexOf('/'))
+        url = url.substring(0, url.indexOf('/'))
+
+        if (url && url.length > 5) {
+            url = http+url
+        } else {
+            url = null
+        }
     } catch (error) {}
 
-    if (mCreate[url] == null) {
-        mCreate[url] = 'x'
-        app.use(createProxyMiddleware({ target: url, changeOrigin: true }))
+    if (url) {
+        if (mCreate[url] == null) {
+            mCreate[url] = 'x'
+            app.use(createProxyMiddleware({ target: url, changeOrigin: true }))
+        }
     }
     next()
 })
