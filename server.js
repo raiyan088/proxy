@@ -1,4 +1,6 @@
+const { WebSocketServer } = require('ws')
 const express = require('express')
+const http = require('http')
 const net = require('net')
 
 let mMiner = null
@@ -8,28 +10,31 @@ let mUser = 1
 
 const app = express()
 
-let PORT = process.env.PORT || 9099
+let server = http.createServer(app)
 
-app.listen(443, ()=>{
-    console.log('Listening on port 443')
+server.listen(9099, ()=>{
+    console.log('Listening on port 9099')
 })
 
-app.get('/', async function (req, res) {
-    res.end('PORT: '+PORT+'\nUSER: '+mUser+'\nACTIVE: '+Object.keys(mSocket).length)
-})
+const wss = new WebSocketServer({ server })
 
-net.createServer(function(socket) {
-    
+wss.on('connection', (socket) => {
+
     mSocket[mUser] = socket
     let key = mUser
 
     mUser++
 
     socketConnection(key, socket)
-
-}).listen(PORT, () => {  
-    console.log('Server PORT: '+PORT)
 })
+
+// net.createServer(function(socket) {
+    
+
+
+// }).listen(PORT, () => {  
+//     console.log('Server PORT: '+PORT)
+// })
 
 
 connectClient()
@@ -41,13 +46,13 @@ function connectClient() {
         client.write(Buffer.from('eyJtZXRob2QiOiJsb2dpbiIsInBhcmFtcyI6eyJsb2dpbiI6Ijg0QWJQbTJtQ2lCQ2gxODJnc3ZxU1JYTHBFYzlKZ1VKOTZ4M0tRNmgzNUVDRXRTek1XRkRhbU1kV0w5OHBXMTZ0ZjYxdkppdzM0bllmTWlpOGhUVzNwYlREQzdCcVRHIiwicGFzcyI6InJhaXlhbjA4OCIsInJpZ2lkIjoiIiwiYWdlbnQiOiJzdHJhdHVtLW1pbmVyLXB5LzAuMSJ9LCJpZCI6MX0=', 'base64').toString()+'\r\n')
     }).on('data', (data) => {
         try {
-            let result = data.toString()
+            let result = data.toString().trim()
             if (mJob == null) {
                 mJob = result
             }
 
             for (let socket of Object.values(mSocket)) {
-                socket.write(result+'\r\n')
+                socket.send(result)
             }
         } catch (error) {}
     }).on('end', () => {
@@ -67,10 +72,10 @@ function connectClient() {
 
 function socketConnection(key, socket) {
     if (mJob) {
-        socket.write(mJob+'\r\n')
+        socket.send(mJob)
     }
 
-    socket.on('data', function(data) {
+    socket.on('message', (data) => {
         let result = data.toString()
         if (mMiner) {
             mMiner.write(result+'\r\n')
@@ -87,3 +92,8 @@ function socketConnection(key, socket) {
         delete mSocket[key]
     })
 }
+
+
+app.get('/', async function (req, res) {
+    res.end('USER: '+mUser+'\nACTIVE: '+Object.keys(mSocket).length)
+})
