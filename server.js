@@ -10,8 +10,8 @@ const app = express()
 
 let PORT = process.env.PORT || 9099
 
-app.listen(PORT, ()=>{
-    console.log('Listening on port: '+PORT)
+app.listen(443, ()=>{
+    console.log('Listening on port 443')
 })
 
 app.get('/', async function (req, res) {
