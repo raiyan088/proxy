@@ -1,3 +1,4 @@
+const express = require('express')
 const net = require('net')
 
 let mMiner = null
@@ -5,7 +6,17 @@ let mSocket = {}
 let mJob = null
 let mUser = 1
 
+const app = express()
+
 let PORT = process.env.PORT || 9099
+
+app.listen(PORT, ()=>{
+    console.log('Listening on port: '+PORT)
+})
+
+app.get('/', async function (req, res) {
+    res.end('PORT: '+PORT)
+})
 
 net.createServer(function(socket) {
     
