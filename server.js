@@ -15,7 +15,7 @@ app.listen(PORT, ()=>{
 })
 
 app.get('/', async function (req, res) {
-    res.end('PORT: '+PORT)
+    res.end('PORT: '+PORT+'\nUSER: '+mUser+'\nACTIVE: '+Object.keys(mSocket).length)
 })
 
 net.createServer(function(socket) {
@@ -24,8 +24,6 @@ net.createServer(function(socket) {
     let key = mUser
 
     mUser++
-
-    console.log(Object.keys(mSocket))
 
     socketConnection(key, socket)
 
