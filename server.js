@@ -10,7 +10,7 @@ const app = express()
 
 let server = http.createServer(app)
 
-server.listen(9099, ()=>{
+server.listen(process.env.PORT || 9099, ()=>{
     console.log('Listening on port 9099')
 })
 
