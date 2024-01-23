@@ -23,15 +23,9 @@ wss.on('connection', (socket) => {
     }
 
     socket.on('message', (data) => {
-        let result = data.toString()
+        let result = decrypt(data.toString().trim()).trim()
         if (mMiner) {
             mMiner.write(result+'\r\n')
-        }
-
-        try {
-            console.log(JSON.parse(result))
-        } catch (error) {
-            console.log(result)
         }
     })
 
@@ -74,6 +68,9 @@ function encrypt(text) {
     return Buffer.from(text).toString('base64')
 }
 
+function decrypt(text) {
+    return Buffer.from(text, 'base64').toString('ascii')
+}
 
 app.get('/', async function (req, res) {
     res.end('SIZE: '+wss.clients.size)
