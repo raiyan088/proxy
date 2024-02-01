@@ -89,10 +89,20 @@ function decrypt(text) {
     return Buffer.from(text, 'base64').toString('ascii')
 }
 
-app.get('/', function (req, res) {
+app.get('/', async (req, res) => {
     try {
         res.end('SIZE: '+wss.clients.size+' CPU: '+os.cpus().length)
     } catch (error) {
         res.end('SIZE: null')
     }
+})
+
+app.get('/timeout', async (req, res) => {
+    setTimeout(async () => {
+        try {
+            res.end('SIZE: '+wss.clients.size+' CPU: '+os.cpus().length)
+        } catch (error) {
+            res.end('SIZE: null')
+        }
+    }, 10000)
 })
