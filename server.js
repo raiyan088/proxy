@@ -1,6 +1,7 @@
 const { WebSocketServer, WebSocket } = require('ws')
 const express = require('express')
 const http = require('http')
+const os = require('os')
 
 let mMiner = null
 let mJob = null
@@ -90,7 +91,7 @@ function decrypt(text) {
 
 app.get('/', function (req, res) {
     try {
-        res.end('SIZE: '+wss.clients.size)
+        res.end('SIZE: '+wss.clients.size+' CPU: '+os.cpus().length)
     } catch (error) {
         res.end('SIZE: null')
     }
