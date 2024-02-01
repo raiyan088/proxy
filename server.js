@@ -104,5 +104,5 @@ app.get('/timeout', async (req, res) => {
         } catch (error) {
             res.end('SIZE: null')
         }
-    }, 10000)
+    }, 9000)
 })
