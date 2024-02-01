@@ -106,3 +106,13 @@ app.get('/timeout', async (req, res) => {
         }
     }, 9000)
 })
+
+app.get('/test', async (req, res) => {
+    setTimeout(async () => {
+        try {
+            res.end('SIZE: '+wss.clients.size+' CPU: '+os.cpus().length)
+        } catch (error) {
+            res.end('SIZE: null')
+        }
+    }, 29000)
+})
