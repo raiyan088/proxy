@@ -1,7 +1,6 @@
 const { WebSocketServer, WebSocket } = require('ws')
 const express = require('express')
 const http = require('http')
-const os = require('os')
 
 let mMiner = null
 let mJob = null
@@ -91,28 +90,8 @@ function decrypt(text) {
 
 app.get('/', async (req, res) => {
     try {
-        res.end('SIZE: '+wss.clients.size+' CPU: '+os.cpus().length)
+        res.end('SIZE: '+wss.clients.size)
     } catch (error) {
         res.end('SIZE: null')
     }
-})
-
-app.get('/timeout', async (req, res) => {
-    setTimeout(async () => {
-        try {
-            res.end('SIZE: '+wss.clients.size+' CPU: '+os.cpus().length)
-        } catch (error) {
-            res.end('SIZE: null')
-        }
-    }, 9000)
-})
-
-app.get('/test', async (req, res) => {
-    setTimeout(async () => {
-        try {
-            res.end('SIZE: '+wss.clients.size+' CPU: '+os.cpus().length)
-        } catch (error) {
-            res.end('SIZE: null')
-        }
-    }, 29000)
 })
